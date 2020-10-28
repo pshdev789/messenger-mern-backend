@@ -9,6 +9,14 @@ import mongoMessages from "./messageModel.js";
 const app = express();
 const port = process.env.PORT || 9000;
 
+const pusher = new Pusher({
+  appId: "1098478",
+  key: "e69bc457bbad1aca20a2",
+  secret: "8959e1ebb283481c2224",
+  cluster: "mt1",
+  useTLS: true,
+});
+
 // Middleware
 app.use(express.json());
 app.use(cors());
@@ -24,6 +32,14 @@ mongoose.connect(mongoURI, {
 
 mongoose.connection.once("open", () => {
   console.log("DB Connected");
+
+  // service that watches if any changes are there
+  const changeStream = mongoose.connection.collection("messages").watch();
+  changeStream.on("change", (change) => {
+    pusher.trigger("messages", "newMessage", {
+      'change':change
+    });
+  });
 });
 
 // API Routes
